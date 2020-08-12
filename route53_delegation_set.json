@@ -1,0 +1,13 @@
+{
+    "Location": "https://route53.amazonaws.com/2013-04-01/delegationset/N01305881RXA7DVRIVVIA",
+    "DelegationSet": {
+        "Id": "/delegationset/N01305881RXA7DVRIVVIA",
+        "CallerReference": "1224",
+        "NameServers": [
+            "ns-1446.awsdns-52.org",
+            "ns-1685.awsdns-18.co.uk",
+            "ns-890.awsdns-47.net",
+            "ns-412.awsdns-51.com"
+        ]
+    }
+}

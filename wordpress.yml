@@ -1,0 +1,31 @@
+---
+- hosts: dev
+  become: yes
+  remote_user: ec2-user
+  tasks:
+    - name: enable php7
+      command: 'amazon-linux-extras enable -y php7.4'
+    - name: clean yum metadata after enabling php7.4 via amazon-linux-extras
+      command: 'yum clean metadata'
+    - name: install apache
+      yum: name={{ item }} state=present
+      with_items:
+        - httpd
+        - php
+        - php-mysqlnd
+    - name: download wordpress
+      get_url: url=http://wordpress.org/wordpress-latest.tar.gz dest=/var/www/html/wordpress.tar.gz force=yes
+    - name: extract wordpress
+      command: 'tar xzf /var/www/html/wordpress.tar.gz -C /var/www/html --strip-components 1'
+    - name: fix permissions
+      file:
+        path: /var/www/html
+        mode: u=rwx,g=rx,o=rx
+        recurse: yes
+        owner: apache
+        group: apache
+    - name: start apache at boot
+      service: name=httpd state=started enabled=yes
+
+
+

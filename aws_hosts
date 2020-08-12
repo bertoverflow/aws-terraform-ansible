@@ -1,0 +1,5 @@
+[dev]
+18.195.159.205
+[dev:vars]
+s3code=training4cloud-55537
+domain=training4cloud
