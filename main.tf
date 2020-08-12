@@ -240,12 +240,12 @@ resource "aws_security_group" "wp_dev_sg" {
 
   // TODO
   # allow all outgoing
-    egress {
-      protocol = "-1"
-      from_port = 0
-      to_port = 0
-      cidr_blocks = ["0.0.0.0/0"]
-    }
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_security_group" "wp_public_sg" {
@@ -263,12 +263,12 @@ resource "aws_security_group" "wp_public_sg" {
 
   // TODO
   # allow all outgoing
-    egress {
-      protocol = "-1"
-      from_port = 0
-      to_port = 0
-      cidr_blocks = ["0.0.0.0/0"]
-    }
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_security_group" "wp_private_sg" {
@@ -286,12 +286,12 @@ resource "aws_security_group" "wp_private_sg" {
 
   // TODO
   # allow all outgoing
-    egress {
-      protocol = "-1"
-      from_port = 0
-      to_port = 0
-      cidr_blocks = ["0.0.0.0/0"]
-    }
+  egress {
+    protocol    = "-1"
+    from_port   = 0
+    to_port     = 0
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_security_group" "wp_rds_sg" {
@@ -393,7 +393,7 @@ resource "aws_instance" "wp_dev" {
   ami           = var.dev_server_ami
   instance_type = var.dev_server_instance_type
 
-  key_name               = aws_key_pair.wp_auth.id // TODO name vs. id?
+  key_name               = aws_key_pair.wp_auth.id
   vpc_security_group_ids = [aws_security_group.wp_dev_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.s3_access_profile.id
   subnet_id              = aws_subnet.wp_public1_subnet.id
@@ -425,13 +425,13 @@ resource "aws_instance" "wp_dev" {
 }
 
 # ------------------------------------------------------------------------------------------
-# ELB
+# Application Load Balancer
 # ------------------------------------------------------------------------------------------
 
-// TODO replace with an application load balancer
-
-resource "aws_elb" "wp_elb" {
-  name = "wp-${var.domain_name}-elb"
+resource "aws_alb" "wp_alb" {
+  name               = "wp-${var.domain_name}-alb"
+  internal           = false
+  load_balancer_type = "application"
 
   subnets = [
     aws_subnet.wp_public1_subnet.id,
@@ -440,29 +440,47 @@ resource "aws_elb" "wp_elb" {
 
   security_groups = [aws_security_group.wp_public_sg.id]
 
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
-
-  health_check {
-    healthy_threshold   = var.elb_healthy_threshold
-    unhealthy_threshold = var.elb_unhealthy_threshold
-    timeout             = var.elb_timeout
-    interval            = var.elb_interval
-    target              = "TCP:80"
-  }
-
-  cross_zone_load_balancing   = true
-  idle_timeout                = 400
-  connection_draining         = true
-  connection_draining_timeout = 400
+  idle_timeout = 400
 
   tags = {
-    Name = "wp-${var.domain_name}-elb"
+    Name = "wp-${var.domain_name}-alb"
   }
+}
+
+resource "aws_alb_listener" "wp_alb_http_listener" {
+  load_balancer_arn = aws_alb.wp_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    target_group_arn = aws_alb_target_group.wp_alb_target_group.arn
+    type             = "forward"
+  }
+}
+
+resource "aws_alb_target_group" "wp_alb_target_group" {
+  name     = "wp-${var.domain_name}-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.wp_vpc.id
+
+  health_check {
+    healthy_threshold   = var.alb_healthy_threshold
+    unhealthy_threshold = var.alb_unhealthy_threshold
+    timeout             = var.alb_timeout
+    interval            = var.alb_interval
+    path                = "/"
+    port                = "80"
+  }
+
+  tags = {
+    Name = "wp-${var.domain_name}-alb-target"
+  }
+}
+
+resource "aws_autoscaling_attachment" "alb_asg_attachment" {
+  alb_target_group_arn   = aws_alb_target_group.wp_alb_target_group.arn
+  autoscaling_group_name = aws_autoscaling_group.wp_asg.id
 }
 
 # ------------------------------------------------------------------------------------------
@@ -525,17 +543,18 @@ resource "aws_autoscaling_group" "wp_asg" {
   health_check_type         = var.asg_health_check_type
   desired_capacity          = var.asg_desired_capacity
   force_delete              = true
-  load_balancers            = [aws_elb.wp_elb.id]
+  target_group_arns         = [aws_alb_target_group.wp_alb_target_group.arn]
 
   vpc_zone_identifier = [
     aws_subnet.wp_private1_subnet.id,
     aws_subnet.wp_private2_subnet.id
   ]
 
-  launch_configuration = aws_launch_configuration.wp_launch_config.name // TODO id vs. name
+  launch_configuration = aws_launch_configuration.wp_launch_config.name
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes = [load_balancers, target_group_arns]
   }
 
   tag {
@@ -560,8 +579,8 @@ resource "aws_route53_record" "www" {
   type    = "A"
 
   alias {
-    name                   = aws_elb.wp_elb.dns_name
-    zone_id                = aws_elb.wp_elb.zone_id
+    name                   = aws_alb.wp_alb.dns_name
+    zone_id                = aws_alb.wp_alb.zone_id
     evaluate_target_health = false
   }
 }

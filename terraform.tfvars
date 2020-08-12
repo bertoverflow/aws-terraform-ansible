@@ -25,10 +25,10 @@ db_instance_class = "db.t2.micro"
 //db_user           = "" // set as environment variable
 //db_password       = "" // set as environment variable
 
-elb_healthy_threshold   = 2
-elb_unhealthy_threshold = 2
-elb_timeout             = 3
-elb_interval            = 30
+alb_healthy_threshold   = 2
+alb_unhealthy_threshold = 2
+alb_timeout             = 3
+alb_interval            = 30
 
 userdata_filename           = "userdata"
 launch_config_instance_type = "t2.micro"

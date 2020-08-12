@@ -19,10 +19,10 @@ variable "db_name" {}
 variable "db_user" {}
 variable "db_password" {}
 
-variable "elb_healthy_threshold" {}
-variable "elb_unhealthy_threshold" {}
-variable "elb_timeout" {}
-variable "elb_interval" {}
+variable "alb_healthy_threshold" {}
+variable "alb_unhealthy_threshold" {}
+variable "alb_timeout" {}
+variable "alb_interval" {}
 
 variable "userdata_filename" {}
 variable "launch_config_instance_type" {}
