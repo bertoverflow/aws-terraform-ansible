@@ -4,8 +4,6 @@ variable "aws_region" {}
 variable "key_name" {}
 variable "public_key_path" {}
 
-variable "local_ip" {}
-
 variable "vpc_cidr" {}
 variable "subnet_cidrs" {
   type = map(string)
@@ -36,3 +34,7 @@ variable "asg_desired_capacity" {}
 variable "delegation_set" {}
 
 data "aws_availability_zones" "available" {}
+
+data "http" "local_ip" {
+  url = "http://ipv4.icanhazip.com"
+}

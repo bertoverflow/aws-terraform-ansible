@@ -1,8 +1,6 @@
 aws_profile = "" // set as environment variable
 aws_region  = "eu-central-1"
 
-//local_ip = "" // set as environment variable
-
 //key_name        = "" // set as environment variable
 //public_key_path = "" // set as environment variable
 

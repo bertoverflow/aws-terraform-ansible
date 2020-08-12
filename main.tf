@@ -227,7 +227,7 @@ resource "aws_security_group" "wp_dev_sg" {
     protocol    = "tcp"
     from_port   = 22
     to_port     = 22
-    cidr_blocks = [var.local_ip]
+    cidr_blocks = ["${chomp(data.http.local_ip.body)}/32"]
   }
 
   # http
@@ -235,7 +235,7 @@ resource "aws_security_group" "wp_dev_sg" {
     protocol    = "tcp"
     from_port   = 80
     to_port     = 80
-    cidr_blocks = [var.local_ip]
+    cidr_blocks = ["${chomp(data.http.local_ip.body)}/32"]
   }
 
   // TODO
@@ -554,7 +554,7 @@ resource "aws_autoscaling_group" "wp_asg" {
 
   lifecycle {
     create_before_destroy = true
-    ignore_changes = [load_balancers, target_group_arns]
+    ignore_changes        = [load_balancers, target_group_arns]
   }
 
   tag {
